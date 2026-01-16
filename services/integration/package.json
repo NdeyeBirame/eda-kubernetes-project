@@ -1,0 +1,9 @@
+{
+  "name": "integration",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "pg": "^8.11.3"
+  }
+}

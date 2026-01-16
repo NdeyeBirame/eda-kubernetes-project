@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDA - Gestion Étudiants</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 30px;
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    h2 {
+      color: #333;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+    }
+    .btn-secondary {
+      background: #48bb78;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #38a169;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(72,187,120,0.4);
+    }
+    #list {
+      list-style: none;
+      margin-top: 15px;
+    }
+    #list li {
+      background: #f7fafc;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+    #list li:hover {
+      background: #edf2f7;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    .status.success {
+      background: #c6f6d5;
+      color: #22543d;
+      border: 1px solid #9ae6b4;
+    }
+    .status.error {
+      background: #fed7d7;
+      color: #742a2a;
+      border: 1px solid #fc8181;
+    }
+    .status.info {
+      background: #bee3f8;
+      color: #2c5282;
+      border: 1px solid #90cdf4;
+    }
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 Gestion des Étudiants</h1>
+    
+    <div id="status" class="status"></div>
+    
+    <h2>➕ Ajouter un étudiant</h2>
+    <form id="studentForm">
+      <input id="nom" placeholder="Nom" required>
+      <input id="prenom" placeholder="Prénom" required>
+      <input id="numero" placeholder="Numéro étudiant" required>
+      <input id="email" type="email" placeholder="Email" required>
+      
+      <div class="btn-group">
+        <button type="submit" class="btn-primary">
+          <span id="btnText">Envoyer</span>
+        </button>
+        <button type="button" class="btn-secondary" onclick="load()">
+          Actualiser la liste
+        </button>
+      </div>
+    </form>
+    
+    <h2>📋 Liste des étudiants</h2>
+    <ul id="list"></ul>
+  </div>
+
+  <script>
+    const statusDiv = document.getElementById('status');
+    const btnText = document.getElementById('btnText');
+    const form = document.getElementById('studentForm');
+
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      statusDiv.style.display = 'block';
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 5000);
+    }
+
+    // Envoyer un étudiant
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nom = document.getElementById('nom').value.trim();
+      const prenom = document.getElementById('prenom').value.trim();
+      const numero = document.getElementById('numero').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (!nom || !prenom || !numero || !email) {
+        showStatus('⚠️ Tous les champs sont requis', 'error');
+        return;
+      }
+
+      btnText.innerHTML = 'Envoi en cours<span class="loading"></span>';
+      
+      try {
+        const response = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom, prenom, numero, email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showStatus('✅ Étudiant envoyé à Kafka avec succès !', 'success');
+          form.reset();
+          
+          // Attendre 2 secondes pour que l'integration traite le message
+          setTimeout(load, 2000);
+        } else {
+          showStatus(`❌ Erreur: ${data.error || 'Erreur inconnue'}`, 'error');
+        }
+      } catch (error) {
+        showStatus(`❌ Erreur de connexion: ${error.message}`, 'error');
+        console.error('Error:', error);
+      } finally {
+        btnText.textContent = 'Envoyer';
+      }
+    });
+
+    // Charger la liste des étudiants
+    async function load() {
+      const listEl = document.getElementById('list');
+      listEl.innerHTML = '<li style="text-align:center; color:#718096;">⏳ Chargement...</li>';
+      
+      try {
+        const response = await fetch('/api/students');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.length === 0) {
+          listEl.innerHTML = '<li style="text-align:center; color:#718096;">Aucun étudiant pour le moment</li>';
+          return;
+        }
+
+        listEl.innerHTML = data.map(s => `
+          <li>
+            <strong>${s.nom} ${s.prenom}</strong><br>
+            📧 ${s.email} | 🎓 ${s.numero}
+          </li>
+        `).join('');
+        
+        showStatus(`✅ ${data.length} étudiant(s) chargé(s)`, 'success');
+      } catch (error) {
+        listEl.innerHTML = '<li style="text-align:center; color:#e53e3e;"></li>';
+        showStatus(`❌ Erreur: ${error.message}`, 'error');
+        console.error('Error:', error);
+      }
+    }
+
+    // Charger automatiquement au démarrage
+    window.addEventListener('load', load);
+  </script>
+</body>
+</html>
