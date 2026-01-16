@@ -55,3 +55,7 @@ kubectl get services
 ```bash
 minikube stop
 ```
+## Contributeurs
+
+- Ndeye Birame Dia
+- Raouf Chaimaa
